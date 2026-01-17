@@ -5,9 +5,13 @@
 #### 1. Назначение меток приложениям
 
 Условия:
-- должны быть созданы namespaces из задания 4 [create-namespaces.sh](../Task4/create-namespaces.sh)
 - Перейти в директорию `Task 5`
 - Убедиться что minikube запущен с `cni=calico`, например `minikube start --cni=calico`
+
+Создать неймспейсы
+```bash
+kubectl apply -f namespaces/namespace-systems-client-mart.yaml
+```
 
 ```bash
 kubectl run front-end-app --image=nginx --labels role=front-end-role --expose --port 80 -n systems-client-mart
