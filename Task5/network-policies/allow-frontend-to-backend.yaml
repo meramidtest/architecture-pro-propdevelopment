@@ -1,0 +1,19 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-frontend-to-backend
+  namespace: systems-client-mart
+spec:
+  podSelector:
+    matchLabels:
+      role: back-end-role
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              role: front-end-role
+      ports:
+        - protocol: TCP
+          port: 80

@@ -1,0 +1,39 @@
+@startuml
+' C4 System Context diagram for new external integrations ("Smart Home")
+
+!global RELATIVE_INCLUDE = 1
+!include ../utils/C4_Context.puml
+!include ../utils/C4_Container.puml
+
+LAYOUT_WITH_LEGEND()
+
+' People
+Person(owner, "Собственник", "Пользуется мобильным приложением и управляет доступом в дом/на территорию")
+Person(tenant, "Жилец", "Проходит в дом/на территорию по выданным правам (лицо/звонок/номер авто)")
+
+' System of interest
+System_Boundary(propDevelopment, "PropDevelopment") {
+  System(tenantMobileApp, "Мобильное приложение для собственников", "Текущее мобильное приложение (витрина сервисов) для доступа к сервисам")
+  System(tenantPlatform, "Платформа PropDevelopment", "Бизнес‑логика ЖКУ/доступов. Управляет правами и интегрируется с партнёрами")
+}
+
+' External systems (partner + devices)
+System_Ext(smartHomePartner, "Партнёр 'Умный дом'", "Платформа умного дома: API для управления устройствами и получения событий")
+System_Ext(smartIntercom, "Интеллектуальный домофон", "Открытие по звонку + распознавание лица для автоматического доступа")
+System_Ext(smartBarrier, "Интеллектуальный шлагбаум", "Открытие по команде + распознавание номера авто для автоматического въезда")
+
+' Relationships (keep it simple for the учебное задание)
+Rel(owner, tenantMobileApp, "Управляет доступом, получает уведомления", "Mobile")
+Rel(tenant, smartIntercom, "Проходит по лицу / открывает по звонку", "Физическое взаимодействие")
+Rel(tenant, smartBarrier, "Проезжает, номер распознаётся", "Физическое взаимодействие")
+
+Rel(tenantMobileApp, tenantPlatform, "Запросы на выдачу/отзыв прав доступа", "REST/WS")
+
+Rel(tenantPlatform, smartHomePartner, "Передача прав доступа (лица/приглашения/номера авто)\nКоманды открыть/закрыть", "API (HTTPS)")
+Rel(smartHomePartner, tenantPlatform, "События доступа и состояния устройств", "Webhooks/API (HTTPS)")
+
+Rel(smartHomePartner, smartIntercom, "Управление устройством, получение событий/распознавания", "IoT/Proprietary")
+Rel(smartHomePartner, smartBarrier, "Управление устройством, получение событий/распознавания", "IoT/Proprietary")
+
+@enduml
+

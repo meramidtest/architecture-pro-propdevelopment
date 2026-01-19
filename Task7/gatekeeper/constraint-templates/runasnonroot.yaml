@@ -1,0 +1,66 @@
+apiVersion: templates.gatekeeper.sh/v1
+kind: ConstraintTemplate
+metadata:
+  name: k8srunasnonroot
+spec:
+  crd:
+    spec:
+      names:
+        kind: K8sRunAsNonRoot
+  targets:
+    - target: admission.k8s.gatekeeper.sh
+      rego: |
+        package k8srunasnonroot
+
+        # Требования:
+        # - runAsNonRoot: true (допускается на уровне Pod или container)
+        # - readOnlyRootFilesystem: true (только на уровне container)
+
+        get_bool(x, key) = v {
+          v := x[key]
+          v == true
+        } else = false
+
+        effective_run_as_non_root(container_sc, pod_sc) = true {
+          get_bool(container_sc, "runAsNonRoot")
+        } else = true {
+          get_bool(pod_sc, "runAsNonRoot")
+        } else = false
+
+        violation[{"msg": msg}] {
+          input.review.kind.kind == "Pod"
+          pod := input.review.object
+          pod_sc := object.get(pod.spec, "securityContext", {})
+          c := pod.spec.containers[_]
+          c_sc := object.get(c, "securityContext", {})
+          effective_run_as_non_root(c_sc, pod_sc) != true
+          msg := sprintf("runAsNonRoot должен быть true (container=%v)", [c.name])
+        }
+
+        violation[{"msg": msg}] {
+          input.review.kind.kind == "Pod"
+          pod := input.review.object
+          c := pod.spec.containers[_]
+          c_sc := object.get(c, "securityContext", {})
+          get_bool(c_sc, "readOnlyRootFilesystem") != true
+          msg := sprintf("readOnlyRootFilesystem должен быть true (container=%v)", [c.name])
+        }
+
+        violation[{"msg": msg}] {
+          input.review.kind.kind == "Pod"
+          pod := input.review.object
+          pod_sc := object.get(pod.spec, "securityContext", {})
+          c := pod.spec.initContainers[_]
+          c_sc := object.get(c, "securityContext", {})
+          effective_run_as_non_root(c_sc, pod_sc) != true
+          msg := sprintf("runAsNonRoot должен быть true (initContainer=%v)", [c.name])
+        }
+
+        violation[{"msg": msg}] {
+          input.review.kind.kind == "Pod"
+          pod := input.review.object
+          c := pod.spec.initContainers[_]
+          c_sc := object.get(c, "securityContext", {})
+          get_bool(c_sc, "readOnlyRootFilesystem") != true
+          msg := sprintf("readOnlyRootFilesystem должен быть true (initContainer=%v)", [c.name])
+        }
